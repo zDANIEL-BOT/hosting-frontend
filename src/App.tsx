@@ -1,122 +1,75 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
+import { useCallback, useEffect, useState } from 'react'
+import { fetchMe, fetchProviders, logout } from './api'
+import type { UsuarioAutenticado } from './types'
+import { LoginPage } from './components/LoginPage'
+import { Dashboard } from './components/Dashboard'
 import './App.css'
 
+type Estado = 'cargando' | 'autenticado' | 'anonimo' | 'error'
+
 function App() {
-  const [count, setCount] = useState(0)
+  const [estado, setEstado] = useState<Estado>('cargando')
+  const [usuario, setUsuario] = useState<UsuarioAutenticado | null>(null)
+  const [providers, setProviders] = useState<string[]>([])
+  const [error, setError] = useState<string | null>(null)
 
-  return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+  useEffect(() => {
+    let activo = true
 
-      <div className="ticks"></div>
+    async function cargar() {
+      try {
+        const [sesion, proveedores] = await Promise.all([fetchMe(), fetchProviders()])
+        if (!activo) return
+        setProviders(proveedores)
+        setUsuario(sesion)
+        setEstado(sesion ? 'autenticado' : 'anonimo')
+      } catch (e) {
+        if (!activo) return
+        setError(e instanceof Error ? e.message : 'Error inesperado')
+        setEstado('error')
+      }
+    }
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+    cargar()
+    return () => {
+      activo = false
+    }
+  }, [])
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+  const handleLogout = useCallback(async () => {
+    await logout()
+    setUsuario(null)
+    setEstado('anonimo')
+  }, [])
+
+  if (estado === 'cargando') {
+    return (
+      <main className="screen-center">
+        <div className="spinner big" />
+        <p className="muted">Verificando sesión…</p>
+      </main>
+    )
+  }
+
+  if (estado === 'error') {
+    return (
+      <main className="screen-center">
+        <div className="card error-card">
+          <h1>Algo salió mal</h1>
+          <p className="muted">{error}</p>
+          <button type="button" className="logout-button" onClick={() => window.location.reload()}>
+            Reintentar
+          </button>
+        </div>
+      </main>
+    )
+  }
+
+  if (estado === 'autenticado' && usuario) {
+    return <Dashboard usuario={usuario} onLogout={handleLogout} />
+  }
+
+  return <LoginPage providers={providers} />
 }
 
 export default App

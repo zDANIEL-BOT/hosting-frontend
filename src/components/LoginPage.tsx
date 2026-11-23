@@ -1,0 +1,81 @@
+import { useState } from 'react'
+import { loginUrl } from '../api'
+import { proveedorInfo } from '../providers'
+import { ProviderIcon } from './ProviderIcon'
+
+export function LoginPage({ providers }: { providers: string[] }) {
+  const [cargando, setCargando] = useState<string | null>(null)
+
+  function iniciar(provider: string) {
+    setCargando(provider)
+    // Navegación a pantalla completa: el backend redirige al proveedor OAuth.
+    window.location.assign(loginUrl(provider))
+  }
+
+  return (
+    <main className="login">
+      <div className="card login-card">
+        <div className="brand">
+          <div className="brand-mark">
+            <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true">
+              <path
+                fill="currentColor"
+                d="M7.97 16.03a.75.75 0 0 1-1.06 0l-1.03-1.03a.75.75 0 0 1 0-1.06l1.03-1.03a.75.75 0 0 1 1.06 1.06l-.5.5h8.06l-.5-.5a.75.75 0 0 1 1.06-1.06l1.03 1.03a.75.75 0 0 1 0 1.06l-1.03 1.03a.75.75 0 0 1-1.06-1.06l.5-.5H8.47l.5.5a.75.75 0 0 1 0 1.06z"
+              />
+              <path
+                fill="currentColor"
+                d="M12 2a10 10 0 0 0-7.07 2.93l1.06 1.06A8.5 8.5 0 1 1 3.5 12H2a10 10 0 1 0 10-10zm0 3a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0 1.5a3.5 3.5 0 1 1 0 7 3.5 3.5 0 0 1 0-7z"
+              />
+            </svg>
+          </div>
+          <h1 className="brand-title">GameHost</h1>
+          <p className="brand-subtitle">Aloja y administra tus servidores de juegos</p>
+        </div>
+
+        <div className="divider" />
+
+        <p className="login-hint">Inicia sesión con tu cuenta favorita</p>
+
+        <div className="providers">
+          {providers.length === 0 && (
+            <p className="providers-empty">
+              No hay proveedores configurados en el backend. Revisa el archivo <code>.env</code>.
+            </p>
+          )}
+
+          {providers.map((provider) => {
+            const info = proveedorInfo(provider)
+            const loading = cargando === provider
+            return (
+              <button
+                key={provider}
+                type="button"
+                className="provider-button"
+                style={
+                  {
+                    '--provider-bg': info.color,
+                    '--provider-fg': info.foreground,
+                  } as React.CSSProperties
+                }
+                onClick={() => iniciar(provider)}
+                disabled={cargando !== null}
+              >
+                <span className="provider-icon">
+                  <ProviderIcon provider={provider} />
+                </span>
+                <span className="provider-label">
+                  {loading ? 'Redirigiendo…' : `Continuar con ${info.label}`}
+                </span>
+                {loading && <span className="spinner" />}
+              </button>
+            )
+          })}
+        </div>
+
+        <p className="legal">
+          Al continuar aceptas nuestros términos. Nunca compartimos tu contraseña con terceros.
+        </p>
+      </div>
+    </main>
+  )
+}
