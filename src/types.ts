@@ -19,3 +19,12 @@ export interface Servidor {
   protocolo: string
   versionJuego: string
 }
+
+export interface CrearServidorDTO {
+  nombre: string;
+  nombreMundo: string;
+  tamanoMundo: string;
+  dificultad: string;
+  maxJugadores: number;
+  contrasena: string | null;
+}

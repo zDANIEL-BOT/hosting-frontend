@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 import type { Servidor, UsuarioAutenticado } from "../types";
-import { fetchServidores } from "../api";
+import {
+  fetchServidores,
+  controlarServidor,
+  eliminarServidor,
+  obtenerEstadoServidor,
+} from "../api";
+import { CrearServidorForm } from "./CrearServidorForm";
 
 interface Props {
   usuario: UsuarioAutenticado;
@@ -22,11 +28,28 @@ function fechaFormato(fecha: string): string {
   });
 }
 
+function estadoVisual(estado: string): string {
+  const estados: Record<string, string> = {
+    RUNNING: "ENCENDIDO",
+    EXITED: "DETENIDO",
+    CREATED: "DETENIDO",
+    RESTARTING: "REINICIANDO",
+    PAUSED: "PAUSADO",
+    DEAD: "ERROR",
+    NO_CREADO: "NO CREADO",
+  };
+
+  return estados[estado] ?? estado;
+}
+
 export function Dashboard({ usuario, onLogout }: Props) {
   const [saliendo, setSaliendo] = useState(false);
   const [servidores, setServidores] = useState<Servidor[]>([]);
   const [cargandoServidores, setCargandoServidores] = useState(true);
   const [errorServidores, setErrorServidores] = useState<string | null>(null);
+  const [mostrarFormulario, setMostrarFormulario] = useState(false);
+  const [servidorOcupado, setServidorOcupado] = useState<string | null>(null);
+  const [errorControl, setErrorControl] = useState<string | null>(null);
 
   async function cargarServidores() {
     setCargandoServidores(true);
@@ -46,9 +69,102 @@ export function Dashboard({ usuario, onLogout }: Props) {
     }
   }
 
+  async function actualizarEstados() {
+    const resultados = await Promise.all(
+      servidores.map(async (servidor) => {
+        try {
+          const estado = await obtenerEstadoServidor(servidor.idServidor);
+          return { idServidor: servidor.idServidor, estado };
+        } catch {
+          return null;
+        }
+      }),
+    );
+
+    setServidores((actuales) =>
+      actuales.map((servidor) => {
+        const resultado = resultados.find(
+          (item) => item?.idServidor === servidor.idServidor,
+        );
+
+        return resultado
+          ? { ...servidor, estadoActual: resultado.estado }
+          : servidor;
+      }),
+    );
+  }
+
+  async function servidorCreado() {
+    setMostrarFormulario(false);
+    await cargarServidores();
+  }
+
   useEffect(() => {
     void cargarServidores();
   }, []);
+
+  useEffect(() => {
+    if (servidores.length === 0) return;
+
+    void actualizarEstados();
+
+    const intervalo = window.setInterval(() => {
+      void actualizarEstados();
+    }, 5000);
+
+    return () => window.clearInterval(intervalo);
+  }, [servidores.length]);
+
+  async function ejecutarAccion(
+    idServidor: string,
+    accion: "iniciar" | "detener" | "reiniciar",
+  ) {
+    setServidorOcupado(idServidor);
+    setErrorControl(null);
+
+    try {
+      await controlarServidor(idServidor, accion);
+      const estado = await obtenerEstadoServidor(idServidor);
+
+      setServidores((actuales) =>
+        actuales.map((servidor) =>
+          servidor.idServidor === idServidor
+            ? { ...servidor, estadoActual: estado }
+            : servidor,
+        ),
+      );
+    } catch (error) {
+      setErrorControl(
+        error instanceof Error
+          ? error.message
+          : "No se pudo ejecutar la acción.",
+      );
+    } finally {
+      setServidorOcupado(null);
+    }
+  }
+
+  async function borrarServidor(idServidor: string) {
+    if (!window.confirm("¿Seguro que deseas eliminar este servidor?")) return;
+
+    setServidorOcupado(idServidor);
+    setErrorControl(null);
+
+    try {
+      await eliminarServidor(idServidor);
+      setServidores((actuales) =>
+        actuales.filter((servidor) => servidor.idServidor !== idServidor),
+      );
+    } catch (error) {
+      setErrorControl(
+        error instanceof Error
+          ? error.message
+          : "No se pudo eliminar el servidor.",
+      );
+    } finally {
+      setServidorOcupado(null);
+    }
+  }
 
   async function cerrar() {
     setSaliendo(true);
@@ -64,7 +180,6 @@ export function Dashboard({ usuario, onLogout }: Props) {
       <header className="card account-header">
         <div className="account-top">
           <div className="avatar">{iniciales(usuario.nombre)}</div>
-
           <div className="account-ids">
             <h1 className="account-name">{usuario.nombre}</h1>
             <p className="account-email">
@@ -79,13 +194,7 @@ export function Dashboard({ usuario, onLogout }: Props) {
           onClick={cerrar}
           disabled={saliendo}
         >
-          {saliendo ? (
-            <>
-              <span className="spinner dark" /> Cerrando sesión…
-            </>
-          ) : (
-            "Cerrar sesión"
-          )}
+          {saliendo ? "Cerrando sesión…" : "Cerrar sesión"}
         </button>
       </header>
 
@@ -98,11 +207,29 @@ export function Dashboard({ usuario, onLogout }: Props) {
             </p>
           </div>
 
-          <span className="servers-count">
-            {servidores.length}{" "}
-            {servidores.length === 1 ? "servidor" : "servidores"}
-          </span>
+          <div className="servers-heading-actions">
+            <span className="servers-count">
+              {servidores.length}{" "}
+              {servidores.length === 1 ? "servidor" : "servidores"}
+            </span>
+            <button
+              type="button"
+              className="create-button"
+              onClick={() => setMostrarFormulario(true)}
+            >
+              + Crear servidor
+            </button>
+          </div>
         </div>
+
+        {mostrarFormulario && (
+          <CrearServidorForm
+            onCreado={servidorCreado}
+            onCancelar={() => setMostrarFormulario(false)}
+          />
+        )}
+
+        {errorControl && <p className="form-error">{errorControl}</p>}
 
         {cargandoServidores && (
           <div className="servers-message">
@@ -132,49 +259,99 @@ export function Dashboard({ usuario, onLogout }: Props) {
 
         {!cargandoServidores && !errorServidores && servidores.length > 0 && (
           <div className="servers-grid">
-            {servidores.map((servidor) => (
-              <article className="server-card" key={servidor.idServidor}>
-                <div className="server-card-heading">
-                  <h3>{servidor.nombre}</h3>
-                  <span
-                    className={`server-status ${servidor.estadoActual.toLowerCase()}`}
-                  >
-                    {servidor.estadoActual}
-                  </span>
-                </div>
+            {servidores.map((servidor) => {
+              const ocupado = servidorOcupado === servidor.idServidor;
+              const encendido = servidor.estadoActual === "RUNNING";
 
-                <p className="server-world">{servidor.nombreMundo}</p>
+              return (
+                <article className="server-card" key={servidor.idServidor}>
+                  <div className="server-card-heading">
+                    <h3>{servidor.nombre}</h3>
+                    <span
+                      className={`server-status ${estadoVisual(servidor.estadoActual).toLowerCase()}`}
+                    >
+                      {estadoVisual(servidor.estadoActual)}
+                    </span>
+                  </div>
 
-                <div className="server-details">
-                  <div>
-                    <span>Tamaño del mundo</span>
-                    <strong>{servidor.tamanoMundo}</strong>
+                  <p className="server-world">{servidor.nombreMundo}</p>
+
+                  <div className="server-details">
+                    <div>
+                      <span>Tamaño del mundo</span>
+                      <strong>{servidor.tamanoMundo}</strong>
+                    </div>
+                    <div>
+                      <span>Dificultad</span>
+                      <strong>{servidor.dificultad}</strong>
+                    </div>
+                    <div>
+                      <span>Máximo de jugadores</span>
+                      <strong>{servidor.maxJugadores}</strong>
+                    </div>
+                    <div>
+                      <span>Puerto de conexión</span>
+                      <strong>
+                        {servidor.puertoHost}/{servidor.protocolo}
+                      </strong>
+                    </div>
+                    <div>
+                      <span>Versión de Terraria</span>
+                      <strong>{servidor.versionJuego}</strong>
+                    </div>
+                    <div>
+                      <span>Creado el</span>
+                      <strong>{fechaFormato(servidor.fechaCreacion)}</strong>
+                    </div>
                   </div>
-                  <div>
-                    <span>Dificultad</span>
-                    <strong>{servidor.dificultad}</strong>
+
+                  <div className="server-actions">
+                    {encendido ? (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          void ejecutarAccion(servidor.idServidor, "detener")
+                        }
+                        disabled={ocupado}
+                      >
+                        Detener
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          void ejecutarAccion(servidor.idServidor, "iniciar")
+                        }
+                        disabled={ocupado}
+                      >
+                        Iniciar
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        void ejecutarAccion(servidor.idServidor, "reiniciar")
+                      }
+                      disabled={ocupado || !encendido}
+                    >
+                      Reiniciar
+                    </button>
+
+                    <button
+                      type="button"
+                      className="delete-button"
+                      onClick={() => void borrarServidor(servidor.idServidor)}
+                      disabled={ocupado}
+                    >
+                      Eliminar
+                    </button>
+
+                    {ocupado && <span>Procesando...</span>}
                   </div>
-                  <div>
-                    <span>Máximo de jugadores</span>
-                    <strong>{servidor.maxJugadores}</strong>
-                  </div>
-                  <div>
-                    <span>Puerto</span>
-                    <strong>
-                      {servidor.puertoHost}/{servidor.protocolo}
-                    </strong>
-                  </div>
-                  <div>
-                    <span>Versión de Terraria</span>
-                    <strong>{servidor.versionJuego}</strong>
-                  </div>
-                  <div>
-                    <span>Creado el</span>
-                    <strong>{fechaFormato(servidor.fechaCreacion)}</strong>
-                  </div>
-                </div>
-              </article>
-            ))}
+                </article>
+              );
+            })}
           </div>
         )}
       </section>
