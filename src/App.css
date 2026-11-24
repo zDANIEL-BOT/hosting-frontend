@@ -557,3 +557,74 @@
   color: #f87171;
   font-size: 0.85rem;
 }
+
+/* ---------- Dashboard principal ---------- */
+
+.dashboard {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 28px;
+}
+
+.account-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  width: 100%;
+  padding: 16px 22px;
+  border-radius: 16px;
+}
+
+.account-header .account-top {
+  flex: 1;
+  min-width: 0;
+}
+
+.account-header .avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  font-size: 1.1rem;
+}
+
+.account-header .account-name {
+  font-size: 1.05rem;
+}
+
+.account-header .account-email {
+  font-size: 0.82rem;
+}
+
+.account-header .logout-button {
+  width: auto;
+  flex-shrink: 0;
+  margin: 0;
+}
+
+.servers-section {
+  margin-top: 0;
+}
+
+@media (max-width: 600px) {
+  .dashboard {
+    padding: 20px 14px;
+    gap: 22px;
+  }
+
+  .account-header {
+    padding: 14px;
+    gap: 12px;
+  }
+
+  .account-header .avatar {
+    width: 42px;
+    height: 42px;
+  }
+}
