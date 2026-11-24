@@ -1,15 +1,39 @@
-import { useState } from 'react'
-import { loginUrl } from '../api'
-import { proveedorInfo } from '../providers'
-import { ProviderIcon } from './ProviderIcon'
+import { useState } from "react";
+import { loginUrl } from "../api";
+import { proveedorInfo } from "../providers";
+import { ProviderIcon } from "./ProviderIcon";
 
-export function LoginPage({ providers }: { providers: string[] }) {
-  const [cargando, setCargando] = useState<string | null>(null)
+interface Props {
+  providers: string[];
+  onLocalLogin: (correo: string, contrasena: string) => Promise<void>;
+}
+
+export function LoginPage({ providers, onLocalLogin }: Props) {
+  const [cargando, setCargando] = useState<string | null>(null);
+  const [correo, setCorreo] = useState("");
+  const [contrasena, setContrasena] = useState("");
+  const [errorLocal, setErrorLocal] = useState<string | null>(null);
+  const [cargandoLocal, setCargandoLocal] = useState(false);
 
   function iniciar(provider: string) {
-    setCargando(provider)
-    // Navegación a pantalla completa: el backend redirige al proveedor OAuth.
-    window.location.assign(loginUrl(provider))
+    setCargando(provider);
+    window.location.assign(loginUrl(provider));
+  }
+
+  async function iniciarSesionLocal(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setErrorLocal(null);
+    setCargandoLocal(true);
+
+    try {
+      await onLocalLogin(correo, contrasena);
+    } catch (error) {
+      setErrorLocal(
+        error instanceof Error ? error.message : "No se pudo iniciar sesión",
+      );
+    } finally {
+      setCargandoLocal(false);
+    }
   }
 
   return (
@@ -29,23 +53,60 @@ export function LoginPage({ providers }: { providers: string[] }) {
             </svg>
           </div>
           <h1 className="brand-title">GameHost</h1>
-          <p className="brand-subtitle">Aloja y administra tus servidores de juegos</p>
+          <p className="brand-subtitle">
+            Aloja y administra tus servidores de juegos
+          </p>
         </div>
 
         <div className="divider" />
 
-        <p className="login-hint">Inicia sesión con tu cuenta favorita</p>
+        <form className="local-login-form" onSubmit={iniciarSesionLocal}>
+          <p className="login-hint">Iniciar sesión con correo y contraseña</p>
+
+          <input
+            type="email"
+            placeholder="Correo electrónico"
+            value={correo}
+            onChange={(e) => setCorreo(e.target.value)}
+            required
+            disabled={cargandoLocal}
+          />
+
+          <input
+            type="password"
+            placeholder="Contraseña"
+            value={contrasena}
+            onChange={(e) => setContrasena(e.target.value)}
+            required
+            disabled={cargandoLocal}
+          />
+
+          {errorLocal && <p className="login-error">{errorLocal}</p>}
+
+          <button
+            type="submit"
+            className="provider-button local-login-button"
+            disabled={cargandoLocal || cargando !== null}
+          >
+            {cargandoLocal ? "Iniciando sesión…" : "Iniciar sesión"}
+          </button>
+        </form>
+
+        <div className="divider" />
+
+        <p className="login-hint">O continúa con un proveedor externo</p>
 
         <div className="providers">
           {providers.length === 0 && (
             <p className="providers-empty">
-              No hay proveedores configurados en el backend. Revisa el archivo <code>.env</code>.
+              No hay proveedores configurados en el backend. Revisa el archivo{" "}
+              <code>.env</code>.
             </p>
           )}
 
           {providers.map((provider) => {
-            const info = proveedorInfo(provider)
-            const loading = cargando === provider
+            const info = proveedorInfo(provider);
+            const loading = cargando === provider;
             return (
               <button
                 key={provider}
@@ -53,8 +114,8 @@ export function LoginPage({ providers }: { providers: string[] }) {
                 className="provider-button"
                 style={
                   {
-                    '--provider-bg': info.color,
-                    '--provider-fg': info.foreground,
+                    "--provider-bg": info.color,
+                    "--provider-fg": info.foreground,
                   } as React.CSSProperties
                 }
                 onClick={() => iniciar(provider)}
@@ -64,18 +125,19 @@ export function LoginPage({ providers }: { providers: string[] }) {
                   <ProviderIcon provider={provider} />
                 </span>
                 <span className="provider-label">
-                  {loading ? 'Redirigiendo…' : `Continuar con ${info.label}`}
+                  {loading ? "Redirigiendo…" : `Continuar con ${info.label}`}
                 </span>
                 {loading && <span className="spinner" />}
               </button>
-            )
+            );
           })}
         </div>
 
         <p className="legal">
-          Al continuar aceptas nuestros términos. Nunca compartimos tu contraseña con terceros.
+          Al continuar aceptas nuestros términos. Nunca compartimos tu
+          contraseña con terceros.
         </p>
       </div>
     </main>
-  )
+  );
 }
