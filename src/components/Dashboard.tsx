@@ -1,8 +1,6 @@
 import { useEffect, useState } from "react";
 import type { Servidor, UsuarioAutenticado } from "../types";
 import { fetchServidores } from "../api";
-import { proveedorInfo } from "../providers";
-import { ProviderIcon } from "./ProviderIcon";
 
 interface Props {
   usuario: UsuarioAutenticado;
@@ -26,7 +24,6 @@ function fechaFormato(fecha: string): string {
 
 export function Dashboard({ usuario, onLogout }: Props) {
   const [saliendo, setSaliendo] = useState(false);
-
   const [servidores, setServidores] = useState<Servidor[]>([]);
   const [cargandoServidores, setCargandoServidores] = useState(true);
   const [errorServidores, setErrorServidores] = useState<string | null>(null);
@@ -64,46 +61,16 @@ export function Dashboard({ usuario, onLogout }: Props) {
 
   return (
     <main className="dashboard">
-      <div className="card account-card">
+      <header className="card account-header">
         <div className="account-top">
           <div className="avatar">{iniciales(usuario.nombre)}</div>
+
           <div className="account-ids">
             <h1 className="account-name">{usuario.nombre}</h1>
             <p className="account-email">
               {usuario.correo ?? "Sin correo vinculado"}
             </p>
           </div>
-          <span className="rol-pill">{usuario.rol}</span>
-        </div>
-
-        <div className="status-row">
-          <span className="status-dot" />
-          Sesión iniciada
-        </div>
-
-        <div className="section">
-          <h2 className="section-title">Cuentas vinculadas</h2>
-          <div className="linked-providers">
-            {usuario.proveedores.length === 0 && (
-              <p className="muted">Aún no hay proveedores vinculados.</p>
-            )}
-
-            {usuario.proveedores.map((provider) => {
-              const info = proveedorInfo(provider);
-
-              return (
-                <span key={provider} className="linked-badge">
-                  <ProviderIcon provider={provider} size={14} />
-                  {info.label}
-                </span>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="section">
-          <h2 className="section-title">Identificador</h2>
-          <code className="account-id">{usuario.id}</code>
         </div>
 
         <button
@@ -120,7 +87,7 @@ export function Dashboard({ usuario, onLogout }: Props) {
             "Cerrar sesión"
           )}
         </button>
-      </div>
+      </header>
 
       <section className="servers-section">
         <div className="servers-heading">
@@ -183,29 +150,24 @@ export function Dashboard({ usuario, onLogout }: Props) {
                     <span>Tamaño del mundo</span>
                     <strong>{servidor.tamanoMundo}</strong>
                   </div>
-
                   <div>
                     <span>Dificultad</span>
                     <strong>{servidor.dificultad}</strong>
                   </div>
-
                   <div>
                     <span>Máximo de jugadores</span>
                     <strong>{servidor.maxJugadores}</strong>
                   </div>
-
                   <div>
                     <span>Puerto</span>
                     <strong>
                       {servidor.puertoHost}/{servidor.protocolo}
                     </strong>
                   </div>
-
                   <div>
                     <span>Versión de Terraria</span>
                     <strong>{servidor.versionJuego}</strong>
                   </div>
-
                   <div>
                     <span>Creado el</span>
                     <strong>{fechaFormato(servidor.fechaCreacion)}</strong>
