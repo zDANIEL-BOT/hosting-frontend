@@ -628,3 +628,210 @@
     height: 42px;
   }
 }
+
+/* ---------- Formulario de creación de servidores ---------- */
+
+.servers-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.create-button {
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--accent);
+  color: white;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.create-button:hover {
+  opacity: 0.88;
+}
+
+.create-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.create-server-card {
+  margin: 24px 0;
+  padding: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.create-server-heading {
+  margin-bottom: 22px;
+}
+
+.create-server-heading h2 {
+  margin: 0 0 6px;
+  font-size: 1.2rem;
+}
+
+.create-server-heading p {
+  margin: 0;
+}
+
+.create-server-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.form-field label {
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.form-field input,
+.form-field select {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.05);
+  color: white;
+  font: inherit;
+  outline: none;
+}
+
+.form-field select option {
+  background: #1e293b;
+  color: white;
+}
+
+.form-field input:focus,
+.form-field select:focus {
+  border-color: var(--accent);
+}
+
+.form-field input:disabled,
+.form-field select:disabled {
+  opacity: 0.6;
+}
+
+.form-field input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.form-error {
+  margin: 0;
+  color: #f87171;
+  font-size: 0.88rem;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.cancel-button {
+  padding: 10px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 9px;
+  background: transparent;
+  color: white;
+  font: inherit;
+  cursor: pointer;
+}
+
+.cancel-button:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.cancel-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 600px) {
+  .servers-heading-actions {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+  }
+
+  .create-server-card {
+    padding: 18px;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .form-actions {
+    flex-direction: column-reverse;
+  }
+
+  .form-actions button {
+    width: 100%;
+  }
+}
+
+.server-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.server-actions button {
+  padding: 9px 13px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.07);
+  color: white;
+  font: inherit;
+  cursor: pointer;
+}
+
+.server-actions button:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.server-actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.server-actions .delete-button {
+  border-color: rgba(248, 113, 113, 0.4);
+  color: #f87171;
+}
+
+.server-status.running,
+.server-status.encendido {
+  color: #4ade80;
+}
+
+.server-status.exited,
+.server-status.detenido {
+  color: #fbbf24;
+}
+
+.server-status.restarting,
+.server-status.reiniciando {
+  color: #60a5fa;
+}
